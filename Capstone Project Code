@@ -1,0 +1,81 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, classification_report
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+
+# Create a DataFrame to store the data
+data = pd.DataFrame({
+    "Patient_ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    "Age": [55, 62, 48, 70, 58, 42, 65, 50, 60, 45, 47, 53, 66, 80, 76, 74, 52, 66, 81, 43],
+    "Gender": ["Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female"],
+    "Intraocular_Pressure": [18, 21, 16, 22, 20, 15, 23, 17, 18, 18, 20, 19, 18, 17, 18, 18, 22, 20, 21, 19],
+    "Cup_To_Disc_Ratio": [0.4, 0.6, 0.3, 0.7, 0.5, 0.2, 0.8, 0.4, 0.4, 0.4, 0.5, 0.4, 0.4, 0.6, 0.3, 0.2, 0.5, 0.6, 0.5, 0.6],
+    "Visual_Field_Loss": ["Yes", "No", "Yes", "Yes", "No", "No", "Yes", "No", "Yes", "No", "Yes", "Yes", "No", "No", "Yes", "Yes", "No", "No", "Yes", "No"],
+    "Family_History": ["No", "Yes", "Yes", "No", "No", "Yes", "Yes", "No", "No", "Yes", "No", "Yes", "No", "Yes", "Yes", "Yes", "No", "No", "Yes", "Yes"],
+    "Glaucoma_Diagnosis": [1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]
+})
+
+# Save the DataFrame to a CSV file
+data.to_csv('glaucoma_patients.csv', index=False)
+
+# Load the dataset from the CSV file
+data = pd.read_csv('glaucoma_patients.csv')
+
+# Separate features (X) and labels (y)
+X = data.drop('Glaucoma_Diagnosis', axis=1)
+y = data['Glaucoma_Diagnosis']
+
+# Define transformers for numerical and categorical columns
+numeric_features = ['Age', 'Intraocular_Pressure', 'Cup_To_Disc_Ratio']
+categorical_features = ['Gender', 'Visual_Field_Loss', 'Family_History']
+
+numeric_transformer = Pipeline(steps=[
+    ('scaler', StandardScaler())
+])
+
+categorical_transformer = Pipeline(steps=[
+    ('onehot', OneHotEncoder(drop='first'))
+])
+
+# Combine transformers using ColumnTransformer
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numeric_transformer, numeric_features),
+        ('cat', categorical_transformer, categorical_features)
+    ])
+
+# Transform the features using the preprocessor
+X_preprocessed = preprocessor.fit_transform(X)
+
+# Create the final model
+model = Sequential([
+    Dense(128, activation='relu', input_shape=(X_preprocessed.shape[1],)),
+    Dropout(0.5),
+    Dense(64, activation='relu'),
+    Dropout(0.5),
+    Dense(1, activation='sigmoid')
+])
+
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_preprocessed, y, test_size=0.2, random_state=42)
+
+# Fit the model on the training data
+model.fit(X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test))
+
+# Evaluate the model on the test set
+y_pred_proba = model.predict(X_test)
+y_pred = (y_pred_proba > 0.5).astype(int)
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Accuracy: {accuracy}')
+
+# Display additional evaluation metrics
+print(classification_report(y_test, y_pred))
