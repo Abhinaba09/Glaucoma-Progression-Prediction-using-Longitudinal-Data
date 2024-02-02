@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
@@ -53,6 +54,9 @@ preprocessor = ColumnTransformer(
 # Transform the features using the preprocessor
 X_preprocessed = preprocessor.fit_transform(X)
 
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_preprocessed, y, test_size=0.2, random_state=42)
+
 # Create the final model
 model = Sequential([
     Dense(128, activation='relu', input_shape=(X_preprocessed.shape[1],)),
@@ -65,11 +69,78 @@ model = Sequential([
 # Compile the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X_preprocessed, y, test_size=0.2, random_state=42)
+# Fit the model on the training data and record the training history
+history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test))
 
-# Fit the model on the training data
-model.fit(X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test))
+# Plot training history (loss and accuracy over epochs)
+plt.figure(figsize=(15, 12))
+
+# Plot training & validation accuracy values
+plt.subplot(3, 3, 1)
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend(loc='upper left')
+
+# Plot training & validation loss values
+plt.subplot(3, 3, 2)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend(loc='upper left')
+
+# Plot Pie Chart for the distribution of glaucoma diagnoses
+plt.subplot(3, 3, 3)
+labels = ['No Glaucoma', 'Glaucoma']
+sizes = data['Glaucoma_Diagnosis'].value_counts()
+plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, colors=['lightcoral', 'lightskyblue'])
+plt.title('Distribution of Glaucoma Diagnoses')
+
+# Bar chart for Gender distribution
+plt.subplot(3, 3, 4)
+gender_counts = data['Gender'].value_counts()
+gender_counts.plot(kind='bar', color=['lightgreen', 'lightpink'])
+plt.title('Gender Distribution')
+plt.xlabel('Gender')
+plt.ylabel('Count')
+
+# Histogram for Intraocular Pressure
+plt.subplot(3, 3, 5)
+plt.hist(data['Intraocular_Pressure'], bins=10, color='lightblue', edgecolor='black')
+plt.title('Intraocular Pressure Distribution')
+plt.xlabel('Intraocular Pressure')
+plt.ylabel('Count')
+
+# Histogram for Cup to Disc Ratio
+plt.subplot(3, 3, 6)
+plt.hist(data['Cup_To_Disc_Ratio'], bins=10, color='lightcoral', edgecolor='black')
+plt.title('Cup to Disc Ratio Distribution')
+plt.xlabel('Cup to Disc Ratio')
+plt.ylabel('Count')
+
+# Bar chart for Visual Field Loss distribution
+plt.subplot(3, 3, 7)
+visual_field_counts = data['Visual_Field_Loss'].value_counts()
+visual_field_counts.plot(kind='bar', color=['lightyellow', 'lightblue'])
+plt.title('Visual Field Loss Distribution')
+plt.xlabel('Visual Field Loss')
+plt.ylabel('Count')
+
+# Bar chart for Family History distribution
+plt.subplot(3, 3, 8)
+family_history_counts = data['Family_History'].value_counts()
+family_history_counts.plot(kind='bar', color=['lightgreen', 'lightcoral'])
+plt.title('Family History Distribution')
+plt.xlabel('Family History')
+plt.ylabel('Count')
+
+# Show the plots
+plt.tight_layout()
+plt.show()
 
 # Evaluate the model on the test set
 y_pred_proba = model.predict(X_test)
